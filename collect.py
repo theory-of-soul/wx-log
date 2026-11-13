@@ -455,8 +455,8 @@ def main():
             stamp = dict(taken=now.strftime("%Y-%m-%dT%H:%M"), w=wins)
             if date == dates[2] and now.hour >= 20 and "evening" not in fc:
                 fc["evening"] = stamp
-            if date == today and now.hour >= 6 and "morning" not in fc:
-                fc["morning"] = dict(stamp, late=now.hour >= 9)
+            if date == today and 5 <= now.hour < 8 and "morning" not in fc:
+                fc["morning"] = stamp
 
     for date, day in days.items():
         save(day_file(date), day)
@@ -474,7 +474,6 @@ def main():
             history[p["key"]].append(dict(
                 date=day["date"],
                 fc={k: v["w"] for k, v in pday["fc"].items()},
-                late=bool(pday["fc"].get("morning", {}).get("late")),
                 obs=observed(p, pday, now, day["date"])))
     score = scores([r for recs in history.values() for r in recs])
     wts = weights(score)
