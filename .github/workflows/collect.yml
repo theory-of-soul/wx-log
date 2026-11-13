@@ -5,13 +5,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: collect
   cancel-in-progress: false
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,3 +28,13 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit --quiet -m "data $(date -u +%Y-%m-%dT%H:%MZ)"
           git push --quiet
+      # GitHub's own schedule skips runs, sometimes for hours. Each run therefore
+      # starts the next one itself after a pause; the schedule only restarts the
+      # chain if it ever breaks.
+      - name: Start the next run in 25 minutes
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 1500
+          gh workflow run collect.yml --repo "$GITHUB_REPOSITORY" --ref main
