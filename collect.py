@@ -433,6 +433,7 @@ def main():
     dates = [(now + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(-1, 3)]
     days = {d: load_day(d) for d in dates}
     clim = load(DATA / "clim.json", {})
+    previous = {p["key"]: p for p in load(DATA / "latest.json", {}).get("places", [])}
 
     hourly = guarded("open-meteo", fetch_models) or {}
     met = guarded("met", fetch_met) or {}
@@ -499,6 +500,11 @@ def main():
             code, text, conf = advise(ps, spreads)
             place["days"].append(dict(date=date, w=wins, advice=code, text=text, conf=conf,
                                       obs=observed(p, days[date]["places"][key], now, date) if date == today else None))
+        if not place["days"]:
+            # The forecast source did not answer: keep the last forecast we had.
+            place["days"] = [d for d in previous.get(key, {}).get("days", []) if d["date"] >= today]
+            for d in place["days"]:
+                d["obs"] = observed(p, days[d["date"]]["places"][key], now, d["date"]) if d["date"] == today else None
         for rec in history[key][-8:]:
             for snap in rec["fc"].values():
                 for i, w in enumerate(snap):
